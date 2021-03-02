@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Shop.Data;
 using Shop.Models;
 
 // https://localhost:5001/categories
@@ -24,10 +25,20 @@ public class CategoryController : ControllerBase
 
     [HttpPost]
     [Route("")]
-    public async Task<ActionResult<List<Category>>> Post([FromBody] Category model)
+    public async Task<ActionResult<List<Category>>> Post(
+        [FromBody] Category model,
+        [FromServices] DataContext context
+
+    )
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
+
+        // Adiciona os dados
+        context.Categories.Add(model);
+
+        // Persiste os dados no banco
+        await context.SaveChangesAsync();
 
         return Ok(model);
     }
