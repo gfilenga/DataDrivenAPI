@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Shop.Data;
 using Shop.Models;
 
@@ -31,21 +33,32 @@ public class CategoryController : ControllerBase
 
     )
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-        // Adiciona os dados
-        context.Categories.Add(model);
+            // Adiciona os dados
+            context.Categories.Add(model);
 
-        // Persiste os dados no banco
-        await context.SaveChangesAsync();
+            // Persiste os dados no banco
+            await context.SaveChangesAsync();
 
-        return Ok(model);
+            return Ok(model);
+        }
+        catch (Exception)
+        {
+            return BadRequest(new { message = "Não foi possível criar a categoria" });
+        }
     }
 
     [HttpPut]
     [Route("{id:int}")]
-    public async Task<ActionResult<List<Category>>> Put(int id, [FromBody] Category model)
+    public async Task<ActionResult<List<Category>>> Put(
+        int id,
+        [FromBody] Category model,
+        [FromServices] DataContext context
+    )
     {
         // Verifica se o ID informado é o mesmo do model
         if (id != model.Id)
@@ -55,7 +68,20 @@ public class CategoryController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        return Ok(model);
+        try
+        {
+            context.Entry<Category>(model).State = EntityState.Modified;
+            await context.SaveChangesAsync();
+            return Ok(model);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return BadRequest(new { message = "Este registro já foi atualizado" });
+        }
+        catch (Exception)
+        {
+            return BadRequest(new { message = "Não foi possível atualizar a categoria" });
+        }
     }
 
     [HttpDelete]
